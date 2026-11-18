@@ -34,14 +34,16 @@ data Player = Player
   deriving (Eq, Show)
 
 parseName :: String -> Maybe String
-parseName = todo "1.1 name"
+parseName s = if null s then Nothing else Just s
 
 parseScore :: String -> Maybe Integer
-parseScore = todo "1.1 score"
+parseScore = readMaybe
 
 parsePlayer :: String -> Maybe Player
-parsePlayer = todo "1.1 player"
-
+parsePlayer s =
+  let (name, rest) = break (== ':') s
+      score = drop 1 rest
+  in Player <$> parseName name <*> parseScore score
 
 -- 1.2. Точка на плоскости.
 --
@@ -54,14 +56,13 @@ data Point a = Point a a
 
 instance Applicative Point where
   pure x = Point x x
-
-  Point _ _ <*> Point _ _ = todo "1.2 <*>"
+  Point f g <*> Point x y = Point (f x) (g y)
 
 stretchPoint :: Num a => a -> Point a -> Point a
-stretchPoint = todo "1.2 stretchPoint"
+stretchPoint k p = (k *) <$> p
 
 sumPoints :: Num a => Point a -> Point a -> Point a -> Point a
-sumPoints = todo "1.2 sumPoints"
+sumPoints a b c = (\x y z -> x + y + z) <$> a <*> b <*> c
 
 
 -- 1.3. Список вычислений.
@@ -85,10 +86,12 @@ data User = User { subscribed :: Bool }
 type Registry = Map UserId User
 
 allResults :: Applicative f => [f a] -> f [a]
-allResults = todo "1.3 allResults"
+allResults [] = pure []
+allResults (x : xs) = (:) <$> x <*> allResults xs
 
 check :: Registry -> [UserId] -> Maybe Bool
-check = todo "1.3 check"
+check registry ids =
+  and <$> allResults [ subscribed <$> Map.lookup uid registry | uid <- ids ]
 
 
 -- 1.4. Чтение нескольких чисел.
@@ -105,4 +108,6 @@ check = todo "1.3 check"
 --   runMyIO (readInts 2) (world [2, 5, 8]) == (world [8], [2, 5])
 
 readInts :: Int -> MyIO [Int]
-readInts = todo "1.4"
+readInts n
+  | n <= 0 = pure []
+  | otherwise = allResults (replicate n readInt)
